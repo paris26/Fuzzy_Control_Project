@@ -51,14 +51,15 @@ title('Car Controller Test Space');
 
 %% Load the Fuzzy Logic Controller
 % Ensure that 'car_fuzzy.fis' is in the current folder or MATLAB path.
-fis = readfis('car_fuzzy.fis');
+ fis = readfis('car_fuzzy.fis');
 
 %% Simulation Parameters
 dt = 0.1;             % Time step (seconds)
 max_steps = 10000;      % Maximum number of simulation steps
 car_pos = start_pos;  % Initial position
-theta = 0;            % Initial heading (in radians)
-velocity = 0.1;       % Constant velocity (m/s)
+% theta = atan2(target_pos(2) - start_pos(2), target_pos(1) - start_pos(1)); % Initial heading (in radians)
+theta = -90
+velocity = 0.05;       % Constant velocity (m/s)
 path_x = car_pos(1);
 path_y = car_pos(2);
 
@@ -89,9 +90,9 @@ for step = 1:max_steps
     % Get FLC output (Heading Change) using the normalized inputs
     % The FLC is expected to have inputs: [dv_norm, dh_norm, angle_error]
     heading_change = evalfis(fis, [dv_norm, dh_norm, angle_error]);
-
-    bias = -0.2;
-    heading_change = heading_change + bias;
+    % fprintf('Step %d: dv=%.2f, dh=%.2f, angle_error=%.2f, heading_change=%.2f\n', step, dv_norm, dh_norm, angle_error, heading_change);
+    % bias = -0.2;
+    % heading_change = heading_change + bias;
 
      % Log the current decision details:
     fprintf(['Step %d:\n' ...
