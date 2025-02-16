@@ -51,63 +51,60 @@ title('Car Controller Test Space');
 
 %% Load the Fuzzy Logic Controller
 % Ensure that 'car_fuzzy.fis' is in the current folder or MATLAB path.
- fis = readfis('car_fuzzy.fis');
+fis = readfis('car_fuzzy.fis');
 
 %% Simulation Parameters
-dt = 0.1;             % Time step (seconds)
-max_steps = 10000;      % Maximum number of simulation steps
+dt = 1.1;             % Time step (seconds)
+max_steps = 400;    % Maximum number of simulation steps
 car_pos = start_pos;  % Initial position
-% theta = atan2(target_pos(2) - start_pos(2), target_pos(1) - start_pos(1)); % Initial heading (in radians)
-theta = -90
-velocity = 0.05;       % Constant velocity (m/s)
+theta = 0;          % Initial heading (degrees)
+velocity = 0.2;       % Increased constant velocity (m/s) for more noticeable movement
 path_x = car_pos(1);
 path_y = car_pos(2);
 
-%% Simulation Loop
+%% Simulation Loop (Simplified Logging)
 for step = 1:max_steps
-    % Compute the distance to the target
+    % Compute the distance to the target (if needed for FLC inputs)
     dist_to_target = norm(target_pos - car_pos);
     
-    % Compute the desired heading (in radians)
-    desired_theta = atan2(target_pos(2) - car_pos(2), target_pos(1) - car_pos(1));
+    % Compute the desired heading (in degrees) using atan2d
+    desired_theta = atan2d(target_pos(2) - car_pos(2), target_pos(1) - car_pos(1));
     
-    % Compute raw angle error in degrees
-    raw_angle_error = rad2deg(desired_theta - theta);
-    
-    % Wrap angle_error to [-180, 180]
-    angle_error = mod(raw_angle_error + 180, 360) - 180;
+    % Compute angle error (in degrees), wrapping it to [-180, 180]
+    angle_error = mod(desired_theta - theta + 180, 360) - 180;
     
     % Compute obstacle distances: dv (vertical) and dh (horizontal)
     [dv, dh] = computeObstacleDistances(car_pos(1), car_pos(2));
     
     % Normalize dv and dh to the range [0, 1]
-    % Adjust max_dv and max_dh based on the scale of your environment.
     max_dv = 3;  % Maximum expected vertical distance
-    max_dh = 6;  % Maximum expected horizontal distance
+    max_dh = 5;  % Maximum expected horizontal distance
     dv_norm = min(dv, max_dv) / max_dv;
     dh_norm = min(dh, max_dh) / max_dh;
     
     % Get FLC output (Heading Change) using the normalized inputs
     % The FLC is expected to have inputs: [dv_norm, dh_norm, angle_error]
     heading_change = evalfis(fis, [dv_norm, dh_norm, angle_error]);
-    % fprintf('Step %d: dv=%.2f, dh=%.2f, angle_error=%.2f, heading_change=%.2f\n', step, dv_norm, dh_norm, angle_error, heading_change);
-    % bias = -0.2;
-    % heading_change = heading_change + bias;
-
-     % Log the current decision details:
-    fprintf(['Step %d:\n' ...
-             '  Position: (%.2f, %.2f)\n' ...
-             '  Heading (theta): %.2f rad\n' ...
-             '  Desired Heading: %.2f rad\n' ...
-             '  Angle Error: %.2f deg\n' ...
-             '  Normalized Distances: dv = %.2f, dh = %.2f\n' ...
-             '  FLC Output (Heading Change): %.2f\n\n'], ...
-            step, car_pos(1), car_pos(2), theta, desired_theta, angle_error, dv_norm, dh_norm, heading_change);
     
-    % Update the car's heading and position
-    theta = theta + heading_change * dt;  % Update heading (in radians)
-    car_pos(1) = car_pos(1) + velocity * cos(theta) * dt;
-    car_pos(2) = car_pos(2) + velocity * sin(theta) * dt;
+    % (Optional) Damping factor removed -- you can simply comment it out:
+    % dampingFactor = 0.5;
+    % heading_change = heading_change * dampingFactor;
+    
+    % Log out the following:
+    %   - Current theta
+    %   - dv_norm and dh_norm (normalized obstacle distances)
+    %   - angle_error (the theta input to the FIS)
+    %   - FLC output (heading_change)
+    %   - Effective change in theta (heading_change * dt)
+    fprintf('Step %d: theta = %.2f°, dv_norm = %.2f, dh_norm = %.2f, angle_error = %.2f°, FLC output = %.2f°, Change in theta = %.2f°\n', ...
+        step, theta, dv_norm, dh_norm, angle_error, heading_change, heading_change * dt);
+    
+    % Update the car's heading (in degrees)
+    theta = theta + heading_change * dt;
+    
+    % Update the car's position using cosd and sind (angles in degrees)
+    car_pos(1) = car_pos(1) + velocity * cosd(theta) * dt;
+    car_pos(2) = car_pos(2) + velocity * sind(theta) * dt;
     
     % Store the path for plotting
     path_x(end+1) = car_pos(1);
@@ -126,11 +123,12 @@ for step = 1:max_steps
     end
 end
 
+
+
 %% Plot Car Path
 plotCarPath(path_x, path_y);
 
 %% Local Functions
-
 function [dv, dh] = computeObstacleDistances(x, y)
     % computeObstacleDistances Computes the vertical (dv) and horizontal (dh)
     % distances from point (x, y) to the nearest obstacle reference point.
@@ -139,7 +137,7 @@ function [dv, dh] = computeObstacleDistances(x, y)
     obstacles = [
         5.5, 0.5;
         6.5, 1.5;
-        8,   2.5
+        7.4,  2
     ]; % Each row: [obs_x, obs_y]
     
     dv = inf;
@@ -177,5 +175,6 @@ end
 
 function plotCarPath(path_x, path_y)
     % plotCarPath Plots the path traveled by the car.
-    plot(path_x, path_y, 'r--', 'LineWidth', 1.5);
+    plot(path_x, path_y, 'r-', 'LineWidth', 1.5);
 end
+

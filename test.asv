@@ -51,14 +51,14 @@ title('Car Controller Test Space');
 
 %% Load the Fuzzy Logic Controller
 % Ensure that 'car_fuzzy.fis' is in the current folder or MATLAB path.
-fis = readfis('car_fuzzy.fis');
+ fis = readfis('car_fuzzy.fis');
 
 %% Simulation Parameters
 dt = 0.1;             % Time step (seconds)
 max_steps = 10000;      % Maximum number of simulation steps
 car_pos = start_pos;  % Initial position
 % theta = atan2(target_pos(2) - start_pos(2), target_pos(1) - start_pos(1)); % Initial heading (in radians)
- theta = 0
+theta = -90
 velocity = 0.05;       % Constant velocity (m/s)
 path_x = car_pos(1);
 path_y = car_pos(2);
@@ -79,11 +79,13 @@ for step = 1:max_steps
     
     % Compute obstacle distances: dv (vertical) and dh (horizontal)
     [dv, dh] = computeObstacleDistances(car_pos(1), car_pos(2));
+
+    fprintf("Dv %.2f : | Dh : %.2f" , dv , dh)
     
     % Normalize dv and dh to the range [0, 1]
     % Adjust max_dv and max_dh based on the scale of your environment.
-    max_dv = 3;  % Maximum expected vertical distance
-    max_dh = 6;  % Maximum expected horizontal distance
+    max_dv = 2;  % Maximum expected vertical distance
+    max_dh = 2.7;  % Maximum expected horizontal distance
     dv_norm = min(dv, max_dv) / max_dv;
     dh_norm = min(dh, max_dh) / max_dh;
     
@@ -139,7 +141,7 @@ function [dv, dh] = computeObstacleDistances(x, y)
     obstacles = [
         5.5, 0.5;
         6.5, 1.5;
-        8,   2.5
+        8 ,  2.5;
     ]; % Each row: [obs_x, obs_y]
     
     dv = inf;
